@@ -128,3 +128,46 @@ Activity有四种启动模式分别是：
 (1) 最常见的用法就是TaskAffinity与SingleTask一起使用，待启动Activty会启动再名字与TaskAffinity相同的任务栈
 
 (2) TaskAffinity也可以和allTaskReparenting结合使用，这样可以将Activity从启动的任务栈迁移到另外一个任务栈，且迁移前后的任务栈不相同。
+
+
+# 二.Service相关
+## 1.Service的生命周期
+由于Service有两种启动方式，因此Service也有两种生命周期：
+
+A. startService启动
+
+B. bindService启动
+
+![Service_lifecyle](image/service_lifecycle.png)
+
+## 2.Service的启动流程
+
+// TODO
+
+## 3.Service相关
+
+**(1) IntentService**
+
+IntentService是一种特殊的Service，它继承了Service并且它是一个抽象类，因此必须创建它的子类才能使用IntentService。
+
+**原理**
+
+在实现上，IntentService封装了HandlerThread和Handler。当IntentService被第一次启动时，它的onCreate()方法会被调用，onCreat()方法会创建一个HandlerThread，然后使用它的Looper来构造一个Handler对象mServiceHandler，这样通过mServiceHandler发送的消息最终都会在HandlerThread中执行。
+
+生成一个默认的且与主线程互相独立的工作者线程来执行所有传送至onStartCommand()方法的Intetnt。
+
+生成一个工作队列来传送Intent对象给onHandleIntent()方法，同一时刻只传送一个Intent对象，这样一来，你就不必担心多线程的问题。在所有的请求(Intent)都被执行完以后会自动停止服务，所以，你不需要自己去调用stopSelf()方法来停止。
+
+该服务提供了一个onBind()方法的默认实现，它返回null。
+
+提供了一个onStartCommand()方法的默认实现，它将Intent先传送至工作队列，然后从工作队列中每次取出一个传送至onHandleIntent()方法，在该方法中对Intent做相应的处理。
+
+为什么在mServiceHandler的handleMessage()回调方法中执行完onHandlerIntent()方法后要使用带参数的stopSelf()方法？
+
+因为stopSelf()方法会立即停止服务，而stopSelf（int startId）会等待所有的消息都处理完毕后才终止服务，一般来说，stopSelf(int startId)在尝试停止服务之前会判断最近启动服务的次数是否和startId相等，如果相等就立刻停止服务，不相等则不停止服务。
+
+**(2) 直接在Activity中创建一个thread跟在service中创建一个thread之间的区别？**
+
+在Activity中被创建：该Thread的就是为这个Activity服务的，完成这个特定的Activity交代的任务，主动通知该Activity一些消息和事件，Activity销毁后，该Thread也没有存活的意义了。
+
+在Service中被创建：这是保证最长生命周期的Thread的唯一方式，只要整个Service不退出，Thread就可以一直在后台执行，一般在Service的onCreate()中创建，在onDestroy()中销毁。所以，在Service中创建的Thread，适合长期执行一些独立于APP的后台任务，比较常见的就是：在Service中保持与服务器端的长连接。
